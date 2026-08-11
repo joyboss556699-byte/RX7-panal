@@ -1,0 +1,152 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f6f9;
+  color: #18202a;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  height: 64px;
+  background: #111827;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+header b {
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+header span {
+  opacity: .7;
+  font-size: 13px;
+}
+
+main {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.card,
+.page {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px #0000000c;
+}
+
+.card small {
+  display: block;
+  color: #6b7280;
+}
+
+.card strong {
+  display: block;
+  font-size: 25px;
+  margin-top: 7px;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: #e5e7eb;
+}
+
+.primary {
+  background: #111827;
+  color: #fff;
+  margin-top: 12px;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+input {
+  width: 100%;
+  max-width: 500px;
+  padding: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-top: 5px;
+}
+
+.hidden {
+  display: none;
+}
+
+pre {
+  white-space: pre-wrap;
+  background: #f3f4f6;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.provider {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #eee;
+  padding: 12px;
+  border-radius: 9px;
+  margin: 8px 0;
+}
+
+.on {
+  color: #15803d;
+}
+
+.off {
+  color: #b91c1c;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 9px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+@media (max-width: 650px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  header span {
+    display: none;
+  }
+}
