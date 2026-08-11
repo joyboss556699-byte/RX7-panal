@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RX7 Panel</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<header>
+  <b>RX7 PANEL</b>
+  <span>Number Management</span>
+</header>
+
+<main>
+
+  <section class="cards">
+
+    <div class="card">
+      <small>Balance</small>
+      <strong id="balance">0.00 TK</strong>
+    </div>
+
+    <div class="card">
+      <small>Active Providers</small>
+      <strong id="active">0</strong>
+    </div>
+
+    <div class="card">
+      <small>Orders</small>
+      <strong id="orders">0</strong>
+    </div>
+
+  </section>
+
+  <nav>
+    <button onclick="show('dashboard')">
+      Dashboard
+    </button>
+
+    <button onclick="show('getnum')">
+      Get Number
+    </button>
+
+    <button onclick="show('console')">
+      Console
+    </button>
+
+    <button onclick="show('profile')">
+      Profile
+    </button>
+
+    <button onclick="show('admin')">
+      Admin
+    </button>
+  </nav>
+
+  <section id="dashboard" class="page">
+
+    <h2>Dashboard</h2>
+
+    <p>
+      Welcome to RX7 Panel.
+    </p>
+
+    <div id="providers"></div>
+
+  </section>
+
+  <section id="getnum" class="page hidden">
+
+    <h2>Get Number</h2>
+
+    <label>
+      Service
+    </label>
+
+    <input
+      id="service"
+      placeholder="Service"
+    >
+
+    <label>
+      Country
+    </label>
+
+    <input
+      id="country"
+      placeholder="Country"
+    >
+
+    <button
+      class="primary"
+      onclick="getNumber()"
+    >
+      Get Number
+    </button>
+
+    <pre id="getResult"></pre>
+
+  </section>
+
+  <section id="console" class="page hidden">
+
+    <h2>Console</h2>
+
+    <button onclick="loadConsole()">
+      Refresh
+    </button>
+
+    <div id="consoleBox"></div>
+
+  </section>
+
+  <section id="profile" class="page hidden">
+
+    <h2>Profile</h2>
+
+    <div id="profileBox"></div>
+
+  </section>
+
+  <section id="admin" class="page hidden">
+
+    <h2>Provider Control</h2>
+
+    <div id="adminBox"></div>
+
+  </section>
+
+</main>
+
+<script src="/app.js"></script>
+
+</body>
+</html>
