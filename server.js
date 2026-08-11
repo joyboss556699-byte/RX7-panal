@@ -7,44 +7,49 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// SQLite database
 const db = new Database("rx7.db");
 
 db.exec(`
-CREATE TABLE IF NOT EXISTS settings (
-  provider TEXT PRIMARY KEY,
-  enabled INTEGER NOT NULL DEFAULT 0,
-  priority INTEGER NOT NULL DEFAULT 99
-);
+  CREATE TABLE IF NOT EXISTS settings (
+    provider TEXT PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    priority INTEGER NOT NULL DEFAULT 99
+  );
 
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE NOT NULL,
-  balance REAL NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    balance REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 
-CREATE TABLE IF NOT EXISTS orders (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL,
-  provider TEXT NOT NULL,
-  service TEXT NOT NULL,
-  country TEXT NOT NULL,
-  number TEXT,
-  status TEXT NOT NULL DEFAULT 'pending',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    service TEXT NOT NULL,
+    country TEXT NOT NULL,
+    number TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
-for (const provider of [
+// Default providers
+const providers = [
   ["zenex", 0, 1],
   ["stex", 0, 2],
   ["voltx", 0, 3]
-]) {
+];
+
+for (const provider of providers) {
   db.prepare(`
     INSERT OR IGNORE INTO settings
     (provider, enabled, priority)
@@ -52,6 +57,7 @@ for (const provider of [
   `).run(...provider);
 }
 
+// Active providers
 function getActiveProviders() {
   return db.prepare(`
     SELECT provider, priority
@@ -61,25 +67,15 @@ function getActiveProviders() {
   `).all();
 }
 
-/*
-  Provider API adapter placeholder.
-  এখানে আপনার authorized provider-এর official API
-  documentation অনুযায়ী API integration বসাতে হবে।
-*/
-async function providerGetNumber(provider, service, country) {
-  return {
-    ok: false,
-    provider,
-    message: `${provider} API adapter is not configured yet.`
-  };
-}
+// ==============================
+// DASHBOARD
+// ==============================
 
-/* Dashboard */
 app.get("/api/dashboard", (req, res) => {
-  const providers = db.prepare(`
+  const providerList = db.prepare(`
     SELECT provider, enabled, priority
     FROM settings
-    ORDER BY priority
+    ORDER BY priority ASC
   `).all();
 
   const orders = db.prepare(`
@@ -91,12 +87,15 @@ app.get("/api/dashboard", (req, res) => {
 
   res.json({
     brand: "RX7 Panel",
-    providers,
+    providers: providerList,
     orders
   });
 });
 
-/* Profile */
+// ==============================
+// PROFILE
+// ==============================
+
 app.get("/api/profile", (req, res) => {
   const username = req.query.username || "demo";
 
@@ -108,7 +107,7 @@ app.get("/api/profile", (req, res) => {
 
   if (!user) {
     db.prepare(`
-      INSERT INTO users(username)
+      INSERT INTO users (username)
       VALUES (?)
     `).run(username);
 
@@ -122,7 +121,10 @@ app.get("/api/profile", (req, res) => {
   res.json(user);
 });
 
-/* Console */
+// ==============================
+// CONSOLE
+// ==============================
+
 app.get("/api/console", (req, res) => {
   const orders = db.prepare(`
     SELECT
@@ -141,7 +143,10 @@ app.get("/api/console", (req, res) => {
   res.json(orders);
 });
 
-/* Get Number */
+// ==============================
+// GET NUMBER
+// ==============================
+
 app.post("/api/get-number", async (req, res) => {
   const {
     username = "demo",
@@ -155,65 +160,51 @@ app.post("/api/get-number", async (req, res) => {
     });
   }
 
-  const providers = getActiveProviders();
+  const activeProviders = getActiveProviders();
 
-  if (!providers.length) {
+  if (activeProviders.length === 0) {
     return res.status(409).json({
       error: "No provider is enabled by admin."
     });
   }
 
-  for (const provider of providers) {
-    const result = await providerGetNumber(
-      provider.provider,
-      service,
-      country
-    );
+  /*
+    Provider API integration intentionally left as an adapter.
 
-    if (result.ok) {
-      const data = result.data || {};
+    Connect only APIs you are authorized to use and follow
+    their official documentation, authentication and usage rules.
+  */
 
-      const saved = db.prepare(`
-        INSERT INTO orders
-        (username, provider, service, country, number, status)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(
-        username,
-        provider.provider,
-        service,
-        country,
-        data.number || null,
-        "active"
-      );
-
-      return res.json({
-        ok: true,
-        orderId: saved.lastInsertRowid,
-        provider: provider.provider,
-        data
-      });
-    }
-  }
-
-  res.status(503).json({
-    error: "No enabled provider returned a number."
+  return res.status(501).json({
+    error: "Provider API is not configured yet.",
+    enabledProviders: activeProviders.map(
+      item => item.provider
+    )
   });
 });
 
-/* Admin provider list */
+// ==============================
+// ADMIN - PROVIDERS
+// ==============================
+
 app.get("/api/admin/providers", (req, res) => {
-  const providers = db.prepare(`
+  const providerList = db.prepare(`
     SELECT provider, enabled, priority
     FROM settings
-    ORDER BY priority
+    ORDER BY priority ASC
   `).all();
 
-  res.json(providers);
+  res.json(providerList);
 });
 
-/* Admin provider ON/OFF */
+// ==============================
+// ADMIN - PROVIDER ON/OFF
+// ==============================
+
 app.post("/api/admin/providers/:provider", (req, res) => {
-  const provider = req.params.provider.toLowerCase();
+  const provider = String(
+    req.params.provider
+  ).toLowerCase();
 
   if (!["zenex", "stex", "voltx"].includes(provider)) {
     return res.status(404).json({
@@ -221,20 +212,21 @@ app.post("/api/admin/providers/:provider", (req, res) => {
     });
   }
 
-  const {
-    enabled,
-    priority
-  } = req.body || {};
+  const enabled =
+    req.body?.enabled ? 1 : 0;
+
+  const priority =
+    Number.isFinite(Number(req.body?.priority))
+      ? Number(req.body.priority)
+      : 99;
 
   db.prepare(`
     UPDATE settings
     SET enabled = ?, priority = ?
     WHERE provider = ?
   `).run(
-    enabled ? 1 : 0,
-    Number.isFinite(Number(priority))
-      ? Number(priority)
-      : 99,
+    enabled,
+    priority,
     provider
   );
 
@@ -247,13 +239,31 @@ app.post("/api/admin/providers/:provider", (req, res) => {
   res.json(updated);
 });
 
-/* Frontend */
-app.get("*", (req, res) => {
+// ==============================
+// FRONTEND FALLBACK
+// Express 5 compatible
+// ==============================
+
+app.use((req, res) => {
   res.sendFile(
-    path.join(__dirname, "public", "index.html")
+    path.join(
+      __dirname,
+      "public",
+      "index.html"
+    )
   );
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`RX7 Panel running on port ${PORT}`);
-});
+// ==============================
+// START SERVER
+// ==============================
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `RX7 Panel running on port ${PORT}`
+    );
+  }
+);
